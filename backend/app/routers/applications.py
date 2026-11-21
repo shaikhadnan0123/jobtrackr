@@ -1,5 +1,6 @@
 import io
 import csv
+import traceback
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -21,17 +22,21 @@ def read_applications(
     limit: int = Query(200, ge=1, le=500),
     db: Session = Depends(get_db)
 ):
-    return crud.get_applications(
-        db=db,
-        skip=skip,
-        limit=limit,
-        status=status,
-        job_type=job_type,
-        portal_name=portal_name,
-        location=location,
-        is_active=is_active,
-        search=search
-    )
+    try:
+        return crud.get_applications(
+            db=db,
+            skip=skip,
+            limit=limit,
+            status=status,
+            job_type=job_type,
+            portal_name=portal_name,
+            location=location,
+            is_active=is_active,
+            search=search
+        )
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/export/csv")
 def export_applications_csv(
@@ -87,25 +92,51 @@ def read_application(application_id: str, db: Session = Depends(get_db)):
 
 @router.post("", response_model=schemas.ApplicationResponse, status_code=status.HTTP_201_CREATED)
 def create_application(app_in: schemas.ApplicationCreate, db: Session = Depends(get_db)):
-    return crud.create_application(db, app_in)
+    try:
+        return crud.create_application(db, app_in)
+    except Exception as e:
+        traceback.print_exc()
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{application_id}", response_model=schemas.ApplicationResponse)
 def update_application(application_id: str, app_update: schemas.ApplicationUpdate, db: Session = Depends(get_db)):
-    updated = crud.update_application(db, application_id, app_update)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Application not found")
-    return updated
+    try:
+        updated = crud.update_application(db, application_id, app_update)
+        if not updated:
+            raise HTTPException(status_code=404, detail="Application not found")
+        return updated
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_application(application_id: str, db: Session = Depends(get_db)):
-    deleted = crud.delete_application(db, application_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Application not found")
-    return None
+    try:
+        deleted = crud.delete_application(db, application_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Application not found")
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{application_id}/timeline", response_model=schemas.TimelineResponse, status_code=status.HTTP_201_CREATED)
 def add_timeline_event(application_id: str, timeline_in: schemas.TimelineCreate, db: Session = Depends(get_db)):
-    entry = crud.add_timeline_entry(db, application_id, timeline_in)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Application not found")
-    return entry
+    try:
+        entry = crud.add_timeline_entry(db, application_id, timeline_in)
+        if not entry:
+            raise HTTPException(status_code=404, detail="Application not found")
+        return entry
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

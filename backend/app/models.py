@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, date
-from sqlalchemy import Column, String, Boolean, Date, DateTime, Text, ForeignKey
+from sqlalchemy import Column, String, Boolean, Date, DateTime, Text, ForeignKey, Uuid
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -10,21 +10,21 @@ def generate_uuid() -> str:
 class Application(Base):
     __tablename__ = "applications"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=generate_uuid)
     company = Column(String(255), nullable=False, index=True)
     role = Column(String(255), nullable=False)
-    location = Column(String(100), nullable=False, default="Hyderabad") # Hyderabad, Bengaluru, Gurgaon, Pune, Noida, Remote
-    job_type = Column(String(50), nullable=False, default="ML")        # ML, GenAI, Data, SDE, Full Stack, Other
-    employment_type = Column(String(50), nullable=False, default="Intern") # Intern, Full-time, Contract
-    portal_name = Column(String(100), nullable=False, default="LinkedIn")  # LinkedIn, Cutshort, Internshala, Company Career Page, Naukri, Other
+    location = Column(String(100), nullable=False, default="Hyderabad")
+    job_type = Column(String(50), nullable=False, default="ML")
+    employment_type = Column(String(50), nullable=False, default="Intern")
+    portal_name = Column(String(100), nullable=False, default="LinkedIn")
     portal_link = Column(String(1024), default="")
     apply_link = Column(String(1024), default="")
     salary_text = Column(String(100), default="")
     date_applied = Column(Date, default=date.today)
     deadline = Column(Date, nullable=True)
     follow_up_date = Column(Date, nullable=True, index=True)
-    status = Column(String(50), nullable=False, default="Applied", index=True) # Wishlist, Applied, OA/Test, Interview, Offer, Rejected, Ghosted
-    response_status = Column(String(50), nullable=False, default="No Response") # No Response, Replied, Shortlisted, Rejected
+    status = Column(String(50), nullable=False, default="Applied", index=True)
+    response_status = Column(String(50), nullable=False, default="No Response")
     is_active = Column(Boolean, default=True, index=True)
     screenshot_jd_url = Column(String(1024), default="")
     screenshot_applied_url = Column(String(1024), default="")
@@ -40,8 +40,8 @@ class Application(Base):
 class Timeline(Base):
     __tablename__ = "timeline"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    application_id = Column(String(36), ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True)
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=generate_uuid)
+    application_id = Column(Uuid(as_uuid=False), ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True)
     note = Column(Text, nullable=False)
     status_changed_to = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

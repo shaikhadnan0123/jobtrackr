@@ -100,7 +100,16 @@ export default function AddApplicationModal({ isOpen, onClose, onSuccess }) {
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create application.');
+      console.error('Error creating application:', err);
+      let errorMsg = 'Failed to create application.';
+      if (typeof err.response?.data?.detail === 'string') {
+        errorMsg = err.response.data.detail;
+      } else if (Array.isArray(err.response?.data?.detail)) {
+        errorMsg = err.response.data.detail.map(d => `${d.loc?.slice(1).join('.') || 'field'}: ${d.msg}`).join(', ');
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      setError(errorMsg);
     } finally {
       setSubmitting(false);
     }
